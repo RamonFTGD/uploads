@@ -1,0 +1,16 @@
+# Netscape HTTP Cookie File
+# https://curl.haxx.se/rfc/cookie_spec.html
+# This is a generated file! Do not edit.
+
+.youtube.com	TRUE	/	TRUE	1787508312	PREF	f6=40000000&tz=America.Guatemala&f5=20000
+.youtube.com	TRUE	/	TRUE	1774355069	NID	525=P7HiliapEFphBsnuySKVvN-8mmg8PE4xqPq12KGlr6izBzvPdI2ucJWlTThSgVoT7oYoVDgrhQHHPEvBaACvKPsRgGaw5KBAbg6rh_yph3yXGn0FFFCYhrVvXTCSh81ZOc_GupMIqQ3_0itu0FQNGVS-GE4pLTWDqvaDWtTqDUJWUv3Gdn25
+.youtube.com	TRUE	/	TRUE	1774921573	__Secure-1PSIDTS	sidts-CjQBmkD5S9JlFqXWPxcLkvubWq3kejF3BcSOa7fzjR8gAbtGJC-juquQ2_G9ywD9cG65oIUeEAA
+.youtube.com	TRUE	/	TRUE	1774921573	__Secure-3PSIDTS	sidts-CjQBmkD5S9JlFqXWPxcLkvubWq3kejF3BcSOa7fzjR8gAbtGJC-juquQ2_G9ywD9cG65oIUeEAA
+.youtube.com	TRUE	/	TRUE	1780882168	__Secure-3PAPISID	cw1B4IgUnbD6_FH_/ABW5LjCGC_5uvA9nP
+.youtube.com	TRUE	/	TRUE	1780882168	__Secure-3PSID	g.a0004QjUNnefp9l0O3J-20HcFgovabZhxzpjkzXHO71W0G_K2wcAC6r4VdHOvHZnnqBryaiv5gACgYKAcoSARUSFQHGX2MiPty2OJ7eloMj4TNsCBkNTxoVAUF8yKpNt-y5N5XJCnf2tD8GWaVl0076
+.youtube.com	TRUE	/	TRUE	0	wide	1
+.youtube.com	TRUE	/	TRUE	1787508298	__Secure-3PSIDCC	AKEyXzWh0OwW4LvsmIWZhEIoZdaatJCUNMaM4YCMLFlUXX34_Ou65NAbZHschCEbdjkQ7KO5bA
+.youtube.com	TRUE	/	TRUE	1787508298	VISITOR_INFO1_LIVE	c_d7splY4Zs
+.youtube.com	TRUE	/	TRUE	1787508298	VISITOR_PRIVACY_METADATA	CgJNWBIEGgAgHw%3D%3D
+.youtube.com	TRUE	/	TRUE	0	YSC	VC5besZccF8
+.youtube.com	TRUE	/	TRUE	1787508286	__Secure-ROLLOUT_TOKEN	CK-JnoLskJmYzAEQjryymty8igMYvfvZx9vykgM%3D
