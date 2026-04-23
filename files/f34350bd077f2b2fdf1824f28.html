@@ -1,0 +1,1151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Asteroid Mining Tycoon</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
+:root {
+    --bg: #080c14;
+    --bg2: #0f1520;
+    --card: rgba(15, 22, 35, 0.92);
+    --card-hover: rgba(22, 32, 50, 0.95);
+    --accent: #f59e0b;
+    --accent-dim: rgba(245, 158, 11, 0.12);
+    --accent2: #06d6a0;
+    --accent2-dim: rgba(6, 214, 160, 0.12);
+    --text: #e8e0d4;
+    --text-dim: #7a7468;
+    --border: rgba(245, 158, 11, 0.12);
+    --danger: #ef4444;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; overflow-x: hidden; }
+h1, h2, h3, .font-display { font-family: 'Orbitron', sans-serif; }
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg2); }
+::-webkit-scrollbar-thumb { background: rgba(245,158,11,0.3); border-radius: 3px; }
+
+@keyframes shake {
+    0%, 100% { transform: translate(0, 0); }
+    20% { transform: translate(-4px, 2px); }
+    40% { transform: translate(4px, -3px); }
+    60% { transform: translate(-3px, -2px); }
+    80% { transform: translate(2px, 3px); }
+}
+.shake { animation: shake 0.18s ease-out; }
+
+@keyframes slideIn {
+    from { transform: translateX(120%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+@keyframes slideOut {
+    from { transform: translateX(0); opacity: 1; }
+    to { transform: translateX(120%); opacity: 0; }
+}
+.toast-in { animation: slideIn 0.35s ease-out forwards; }
+.toast-out { animation: slideOut 0.3s ease-in forwards; }
+
+@keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 20px rgba(245,158,11,0.15), inset 0 0 30px rgba(245,158,11,0.03); }
+    50% { box-shadow: 0 0 35px rgba(245,158,11,0.25), inset 0 0 40px rgba(245,158,11,0.06); }
+}
+
+.mining-container {
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    animation: pulse-glow 3s ease-in-out infinite;
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+}
+.mining-container canvas { display: block; width: 100%; height: 100%; }
+
+.tab-btn {
+    padding: 8px 16px; border-radius: 8px 8px 0 0; font-size: 13px; font-weight: 600;
+    background: transparent; border: 1px solid transparent; border-bottom: none;
+    color: var(--text-dim); cursor: pointer; transition: all 0.2s;
+    font-family: 'Space Grotesk', sans-serif;
+}
+.tab-btn:hover { color: var(--text); background: rgba(245,158,11,0.05); }
+.tab-btn.active { color: var(--accent); background: var(--card); border-color: var(--border); }
+
+.upgrade-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 14px; transition: all 0.2s; margin-bottom: 8px;
+}
+.upgrade-card:hover { background: var(--card-hover); border-color: rgba(245,158,11,0.25); }
+.upgrade-card.maxed { opacity: 0.5; border-color: rgba(245,158,11,0.05); }
+
+.progress-track { height: 4px; background: rgba(255,255,255,0.06); border-radius: 2px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #fbbf24); border-radius: 2px; transition: width 0.3s; }
+
+.buy-btn {
+    padding: 6px 14px; border-radius: 8px; font-size: 12px; font-weight: 700;
+    border: 1px solid var(--border); background: var(--accent-dim); color: var(--text-dim);
+    cursor: not-allowed; transition: all 0.2s; font-family: 'Space Grotesk', sans-serif;
+    white-space: nowrap;
+}
+.buy-btn.can-afford {
+    background: var(--accent); color: #0a0e17; border-color: var(--accent);
+    cursor: pointer; box-shadow: 0 0 12px rgba(245,158,11,0.3);
+}
+.buy-btn.can-afford:hover { transform: scale(1.05); box-shadow: 0 0 20px rgba(245,158,11,0.5); }
+.buy-btn:disabled { cursor: not-allowed; transform: none; }
+
+.crystal-btn {
+    padding: 8px 16px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    border: 1px solid rgba(6,214,160,0.2); background: var(--accent2-dim); color: var(--text-dim);
+    cursor: not-allowed; transition: all 0.2s; font-family: 'Space Grotesk', sans-serif;
+}
+.crystal-btn.can-afford {
+    background: var(--accent2); color: #0a0e17; border-color: var(--accent2);
+    cursor: pointer; box-shadow: 0 0 12px rgba(6,214,160,0.3);
+}
+.crystal-btn.can-afford:hover { transform: scale(1.05); }
+
+.prestige-btn {
+    padding: 14px 32px; border-radius: 12px; font-size: 16px; font-weight: 800;
+    border: 2px solid var(--accent); background: linear-gradient(135deg, var(--accent), #d97706);
+    color: #0a0e17; cursor: pointer; transition: all 0.2s;
+    font-family: 'Orbitron', sans-serif; text-transform: uppercase; letter-spacing: 1px;
+}
+.prestige-btn:hover { transform: scale(1.05); box-shadow: 0 0 30px rgba(245,158,11,0.4); }
+.prestige-btn:disabled { opacity: 0.3; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.achievement-item {
+    display: flex; align-items: center; gap: 12px; padding: 10px 14px;
+    border-radius: 10px; background: var(--card); border: 1px solid var(--border);
+    margin-bottom: 6px; transition: all 0.3s;
+}
+.achievement-item.unlocked { border-color: rgba(6,214,160,0.3); }
+.achievement-item.unlocked .ach-icon { color: var(--accent2); }
+.achievement-item.locked .ach-icon { color: var(--text-dim); opacity: 0.3; }
+.achievement-item.locked .ach-name { color: var(--text-dim); }
+
+.modal-overlay {
+    position: fixed; inset: 0; z-index: 100; background: rgba(0,0,0,0.7);
+    display: flex; align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+}
+.modal-box {
+    background: #131b2e; border: 1px solid var(--border); border-radius: 16px;
+    padding: 28px; max-width: 400px; width: 90%; text-align: center;
+}
+
+.stat-chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
+    border-radius: 20px; font-size: 13px; font-weight: 600;
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.06);
+}
+
+.section-title {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 2px;
+    color: var(--text-dim); margin: 16px 0 8px; font-weight: 700;
+}
+.section-title:first-child { margin-top: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+    .shake { animation: none; }
+    .toast-in, .toast-out { animation: none; }
+    .mining-container { animation: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- Toasts -->
+<div id="toasts" class="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none" style="max-width: 340px;"></div>
+
+<!-- Modal -->
+<div id="modal-overlay" class="modal-overlay" style="display:none;">
+    <div class="modal-box">
+        <h3 id="modal-title" class="font-display text-lg mb-2"></h3>
+        <p id="modal-text" class="text-sm opacity-70 mb-6"></p>
+        <div class="flex gap-3 justify-center">
+            <button id="modal-cancel" class="px-5 py-2 rounded-lg text-sm font-semibold border border-white/10 bg-white/5 hover:bg-white/10 transition cursor-pointer">Cancelar</button>
+            <button id="modal-confirm" class="px-5 py-2 rounded-lg text-sm font-semibold bg-red-600 hover:bg-red-500 text-white transition cursor-pointer">Confirmar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Header -->
+<header class="border-b border-white/5 px-4 py-3">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+        <h1 class="font-display text-lg md:text-xl font-black tracking-wide" style="color: var(--accent);">
+            <i class="fas fa-meteor mr-2 text-sm"></i>ASTEROID MINING TYCOON
+        </h1>
+        <div class="flex flex-wrap gap-2">
+            <div class="stat-chip"><i class="fas fa-gem text-amber-400 text-xs"></i> <span id="ore-display">0</span></div>
+            <div class="stat-chip"><i class="fas fa-diamond text-emerald-400 text-xs"></i> <span id="crystal-display">0</span></div>
+            <div class="stat-chip"><i class="fas fa-clock text-amber-400/60 text-xs"></i> <span id="per-sec-display">0/s</span></div>
+        </div>
+    </div>
+</header>
+
+<!-- Main -->
+<main class="max-w-7xl mx-auto p-4 flex flex-col lg:flex-row gap-4">
+    <!-- Zona de Minería -->
+    <div class="lg:w-[48%] flex flex-col gap-3">
+        <div id="mining-area" class="mining-container" style="aspect-ratio: 4/3; min-height: 300px;" aria-label="Zona de minería - haz clic para minar" role="button" tabindex="0">
+            <canvas id="mining-canvas"></canvas>
+        </div>
+        <div class="grid grid-cols-3 gap-2 text-center">
+            <div class="rounded-lg p-3" style="background: var(--card); border: 1px solid var(--border);">
+                <div class="text-xs opacity-50 mb-1">Fuerza</div>
+                <div id="click-power-display" class="font-display text-amber-400 font-bold text-sm">1</div>
+            </div>
+            <div class="rounded-lg p-3" style="background: var(--card); border: 1px solid var(--border);">
+                <div class="text-xs opacity-50 mb-1">Auto/s</div>
+                <div id="auto-income-display" class="font-display text-amber-400 font-bold text-sm">0</div>
+            </div>
+            <div class="rounded-lg p-3" style="background: var(--card); border: 1px solid var(--border);">
+                <div class="text-xs opacity-50 mb-1">Cristal %</div>
+                <div id="crystal-chance-display" class="font-display text-emerald-400 font-bold text-sm">5%</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Paneles -->
+    <div class="lg:w-[52%] flex flex-col">
+        <div class="flex gap-1 border-b border-white/5 overflow-x-auto" role="tablist">
+            <button class="tab-btn active" data-tab="upgrades" role="tab" aria-selected="true"><i class="fas fa-arrow-up mr-1"></i>Mejoras</button>
+            <button class="tab-btn" data-tab="crystals" role="tab" aria-selected="false"><i class="fas fa-diamond mr-1"></i>Cristales</button>
+            <button class="tab-btn" data-tab="prestige" role="tab" aria-selected="false"><i class="fas fa-star mr-1"></i>Prestigio</button>
+            <button class="tab-btn" data-tab="achievements" role="tab" aria-selected="false"><i class="fas fa-trophy mr-1"></i>Logros</button>
+        </div>
+        <div id="tab-content" class="flex-1 overflow-y-auto p-3 rounded-b-xl" style="background: var(--card); border: 1px solid var(--border); border-top: none; max-height: 520px; min-height: 400px;">
+        </div>
+    </div>
+</main>
+
+<!-- Footer -->
+<footer class="border-t border-white/5 px-4 py-3 mt-2">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+        <div class="flex gap-2">
+            <button id="save-btn" class="px-4 py-2 rounded-lg text-xs font-semibold border border-white/10 bg-white/5 hover:bg-white/10 transition cursor-pointer"><i class="fas fa-save mr-1"></i>Guardar</button>
+            <button id="reset-btn" class="px-4 py-2 rounded-lg text-xs font-semibold border border-red-500/20 bg-red-500/5 hover:bg-red-500/15 text-red-400 transition cursor-pointer"><i class="fas fa-trash mr-1"></i>Reiniciar</button>
+        </div>
+        <div class="text-xs opacity-40"><i class="fas fa-trophy mr-1"></i>Logros: <span id="achievement-count">0</span>/15</div>
+        <div class="text-xs opacity-30">Auto-guardado cada 30s</div>
+    </div>
+</footer>
+
+<script>
+/* =====================================================
+   DEFINICIONES DE MEJORAS, TIENDA Y LOGROS
+   ===================================================== */
+const UPGRADES = [
+    { id:'drill1', name:'Taladro Mejorado', desc:'Incrementa la fuerza de extracción', icon:'fa-screwdriver-wrench', type:'click', effectPerLevel:1, baseCost:15, costScale:1.5, maxLevel:50, category:'Fuerza de Clic' },
+    { id:'drill2', name:'Brocas de Acero', desc:'Brocas más duras y afiladas', icon:'fa-gears', type:'click', effectPerLevel:5, baseCost:500, costScale:1.6, maxLevel:30, category:'Fuerza de Clic' },
+    { id:'drill3', name:'Corte por Plasma', desc:'Láseres de plasma cortan la roca', icon:'fa-bolt', type:'click', effectPerLevel:25, baseCost:5000, costScale:1.7, maxLevel:20, category:'Fuerza de Clic' },
+    { id:'drill4', name:'Taladro Cuántico', desc:'Desintegra materia a nivel subatómico', icon:'fa-atom', type:'click', effectPerLevel:150, baseCost:75000, costScale:1.8, maxLevel:15, category:'Fuerza de Clic' },
+    { id:'auto1', name:'Dron Minero', desc:'Un pequeño drón que mina por ti', icon:'fa-robot', type:'auto', effectPerLevel:0.5, baseCost:25, costScale:1.4, maxLevel:40, category:'Ingreso Automático' },
+    { id:'auto2', name:'Enjambre de Drones', desc:'Un enjambre coordinado de drones', icon:'fa-satellite', type:'auto', effectPerLevel:3, baseCost:1000, costScale:1.5, maxLevel:25, category:'Ingreso Automático' },
+    { id:'auto3', name:'Mec Excavador', desc:'Un enorme robot excavador', icon:'fa-truck-monster', type:'auto', effectPerLevel:15, baseCost:12000, costScale:1.6, maxLevel:20, category:'Ingreso Automático' },
+    { id:'auto4', name:'Flota Automatizada', desc:'Flota entera de naves mineras', icon:'fa-shuttle-space', type:'auto', effectPerLevel:80, baseCost:150000, costScale:1.7, maxLevel:15, category:'Ingreso Automático' },
+    { id:'mult1', name:'Refinería Orbital', desc:'Mejora el procesamiento de minerales', icon:'fa-industry', type:'global_mult', effectPerLevel:0.1, baseCost:200, costScale:1.8, maxLevel:20, category:'Multiplicadores' },
+    { id:'mult2', name:'Red de Comercio', desc:'Mejores precios por tus minerales', icon:'fa-handshake', type:'click_mult', effectPerLevel:0.15, baseCost:2000, costScale:1.9, maxLevel:15, category:'Multiplicadores' },
+    { id:'mult3', name:'Súper Refinería', desc:'Tecnología avanzada de procesamiento', icon:'fa-flask', type:'global_mult', effectPerLevel:0.25, baseCost:25000, costScale:2.0, maxLevel:10, category:'Multiplicadores' },
+];
+
+const CRYSTAL_SHOP = [
+    { id:'doubleClick', name:'Doble Fuerza', desc:'Duplica la fuerza de clic durante 60 segundos', cost:25, icon:'fa-hand-fist', maxBuy:99, temp:true, duration:60 },
+    { id:'miningFever', name:'Fiebre Minera', desc:'x5 ingreso automático durante 30 segundos', cost:50, icon:'fa-fire', maxBuy:99, temp:true, duration:30 },
+    { id:'luck', name:'Suerte Cósmica', desc:'+15% probabilidad permanente de cristales', cost:100, icon:'fa-clover', maxBuy:5, temp:false },
+    { id:'magnet', name:'Imán de Minerales', desc:'+50% multiplicador global permanente', cost:150, icon:'fa-magnet', maxBuy:5, temp:false },
+];
+
+const ACHIEVEMENTS = [
+    { id:'first_click', name:'Primer Impacto', desc:'Haz tu primer clic', icon:'fa-hand-pointer' },
+    { id:'ore_100', name:'Novato Minero', desc:'Acumula 100 minerales en total', icon:'fa-gem' },
+    { id:'ore_1k', name:'Minero Experto', desc:'Acumula 1,000 minerales en total', icon:'fa-gem' },
+    { id:'ore_10k', name:'Barón del Mineral', desc:'Acumula 10,000 minerales en total', icon:'fa-gem' },
+    { id:'ore_100k', name:'Magnate Espacial', desc:'Acumula 100,000 minerales en total', icon:'fa-gem' },
+    { id:'ore_1m', name:'Emperador Asteroidal', desc:'Acumula 1,000,000 minerales en total', icon:'fa-crown' },
+    { id:'crystal_1', name:'Primer Cristal', desc:'Encuentra tu primer cristal', icon:'fa-diamond' },
+    { id:'crystal_10', name:'Cazador de Cristales', desc:'Acumula 10 cristales en total', icon:'fa-diamond' },
+    { id:'crystal_50', name:'Coleccionista Cósmico', desc:'Acumula 50 cristales en total', icon:'fa-diamond' },
+    { id:'auto_1', name:'Automatización', desc:'Compra tu primera mejora automática', icon:'fa-robot' },
+    { id:'prestige_1', name:'Nuevo Horizonte', desc:'Realiza tu primer prestigio', icon:'fa-star' },
+    { id:'clicks_100', name:'Dedos de Acero', desc:'Haz 100 clics', icon:'fa-hand-pointer' },
+    { id:'clicks_1000', name:'Clic Inagotable', desc:'Haz 1,000 clics', icon:'fa-hand-pointer' },
+    { id:'upgrades_10', name:'Ingeniero', desc:'Compra 10 niveles de mejoras', icon:'fa-wrench' },
+    { id:'upgrades_50', name:'Arquitecto', desc:'Compra 50 niveles de mejoras', icon:'fa-helmet-safety' },
+];
+
+/* =====================================================
+   ESTADO DEL JUEGO
+   ===================================================== */
+const game = {
+    ore: 0,
+    crystals: 0,
+    totalOre: 0,
+    totalCrystals: 0,
+    totalClicks: 0,
+    totalPrestiges: 0,
+    clickPower: 1,
+    autoIncome: 0,
+    crystalChance: 0.05,
+    starPoints: 0,
+    upgrades: {},
+    crystalUpgrades: { doubleClick: 0, miningFever: 0, luck: 0, magnet: 0 },
+    buffs: { doubleClick: 0, miningFever: 0 },
+    achievements: [],
+    lastSave: Date.now(),
+};
+
+let currentTab = 'upgrades';
+let modalCallback = null;
+
+/* =====================================================
+   UTILIDADES
+   ===================================================== */
+function formatNumber(n) {
+    if (n < 0) return '-' + formatNumber(-n);
+    if (n < 1000) return Math.floor(n).toString();
+    const suffixes = ['', 'K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc'];
+    const tier = Math.min(Math.floor(Math.log10(n) / 3), suffixes.length - 1);
+    const scaled = n / Math.pow(10, tier * 3);
+    return scaled.toFixed(scaled < 10 ? 2 : scaled < 100 ? 1 : 0) + suffixes[tier];
+}
+
+function getUpgradeCost(up, lvl) {
+    return Math.floor(up.baseCost * Math.pow(up.costScale, lvl));
+}
+
+function getTotalUpgradeLevels() {
+    return Object.values(game.upgrades).reduce((s, v) => s + v, 0);
+}
+
+function getAchievementCheck(id) {
+    const checks = {
+        first_click: () => game.totalClicks >= 1,
+        ore_100: () => game.totalOre >= 100,
+        ore_1k: () => game.totalOre >= 1000,
+        ore_10k: () => game.totalOre >= 10000,
+        ore_100k: () => game.totalOre >= 100000,
+        ore_1m: () => game.totalOre >= 1000000,
+        crystal_1: () => game.totalCrystals >= 1,
+        crystal_10: () => game.totalCrystals >= 10,
+        crystal_50: () => game.totalCrystals >= 50,
+        auto_1: () => (game.upgrades['auto1'] || 0) >= 1,
+        prestige_1: () => game.totalPrestiges >= 1,
+        clicks_100: () => game.totalClicks >= 100,
+        clicks_1000: () => game.totalClicks >= 1000,
+        upgrades_10: () => getTotalUpgradeLevels() >= 10,
+        upgrades_50: () => getTotalUpgradeLevels() >= 50,
+    };
+    return checks[id] || (() => false);
+}
+
+/* =====================================================
+   LÓGICA DEL JUEGO
+   ===================================================== */
+function recalculate() {
+    let cp = 0, ai = 0, gm = 1, cm = 1, cc = 0.05;
+
+    for (const up of UPGRADES) {
+        const lvl = game.upgrades[up.id] || 0;
+        if (lvl === 0) continue;
+        if (up.type === 'click') cp += up.effectPerLevel * lvl;
+        if (up.type === 'auto') ai += up.effectPerLevel * lvl;
+        if (up.type === 'global_mult') gm += up.effectPerLevel * lvl;
+        if (up.type === 'click_mult') cm += up.effectPerLevel * lvl;
+    }
+
+    // Bonos permanentes de cristales
+    cc += (game.crystalUpgrades.luck || 0) * 0.15;
+    gm += (game.crystalUpgrades.magnet || 0) * 0.5;
+
+    // Bonos de prestigio
+    gm *= (1 + game.starPoints * 0.1);
+
+    // Buffs temporales
+    if (game.buffs.doubleClick > 0) cm *= 2;
+    if (game.buffs.miningFever > 0) ai *= 5;
+
+    game.clickPower = Math.max(1, (1 + cp) * cm * gm);
+    game.autoIncome = ai * gm;
+    game.crystalChance = Math.min(cc, 0.8);
+}
+
+function buyUpgrade(id) {
+    const up = UPGRADES.find(u => u.id === id);
+    if (!up) return;
+    const lvl = game.upgrades[id] || 0;
+    if (lvl >= up.maxLevel) return;
+    const cost = getUpgradeCost(up, lvl);
+    if (game.ore < cost) return;
+    game.ore -= cost;
+    game.upgrades[id] = lvl + 1;
+    recalculate();
+    renderTabContent();
+    updateUI();
+}
+
+function buyCrystalUpgrade(id) {
+    const item = CRYSTAL_SHOP.find(c => c.id === id);
+    if (!item) return;
+    const bought = game.crystalUpgrades[id] || 0;
+    if (bought >= item.maxBuy) return;
+    if (game.crystals < item.cost) return;
+    game.crystals -= item.cost;
+    game.crystalUpgrades[id] = bought + 1;
+
+    if (item.temp) {
+        game.buffs[id] = (game.buffs[id] || 0) + item.duration;
+        showToast(`${item.name} activado por ${item.duration}s`, 'crystal');
+    } else {
+        showToast(`${item.name} comprado permanentemente`, 'crystal');
+    }
+
+    recalculate();
+    renderTabContent();
+    updateUI();
+}
+
+function doPrestige() {
+    const gain = Math.floor(Math.sqrt(game.totalOre / 10000));
+    if (gain < 1) return;
+    game.starPoints += gain;
+    game.totalPrestiges++;
+    game.ore = 0;
+    game.crystals = 0;
+    game.totalOre = 0;
+    game.totalCrystals = 0;
+    game.totalClicks = 0;
+    game.upgrades = {};
+    game.crystalUpgrades = { doubleClick: 0, miningFever: 0, luck: 0, magnet: 0 };
+    game.buffs = { doubleClick: 0, miningFever: 0 };
+    recalculate();
+    renderTabContent();
+    updateUI();
+    showToast(`Prestigio completado: +${gain} Puntos Estelares`, 'prestige');
+}
+
+function checkAchievements() {
+    let newOnes = false;
+    for (const ach of ACHIEVEMENTS) {
+        if (game.achievements.includes(ach.id)) continue;
+        if (getAchievementCheck(ach.id)()) {
+            game.achievements.push(ach.id);
+            newOnes = true;
+            showToast(`Logro desbloqueado: ${ach.name}`, 'achievement');
+        }
+    }
+    if (newOnes) {
+        document.getElementById('achievement-count').textContent = game.achievements.length;
+        if (currentTab === 'achievements') renderTabContent();
+    }
+}
+
+function handleMiningClick(x, y) {
+    const gained = game.clickPower;
+    game.ore += gained;
+    game.totalOre += gained;
+    game.totalClicks++;
+
+    if (Math.random() < game.crystalChance) {
+        game.crystals++;
+        game.totalCrystals++;
+        spawnParticles(x, y, '#06d6a0', 12);
+        spawnFloatingNumber(x, y, '+1', '#06d6a0');
+    }
+
+    spawnParticles(x, y, '#f59e0b', 8 + Math.min(Math.floor(gained / 50), 20));
+    spawnFloatingNumber(x, y, '+' + formatNumber(gained), '#f59e0b');
+    shakeMiningArea();
+    updateUI();
+}
+
+/* =====================================================
+   TOASTS Y MODAL
+   ===================================================== */
+function showToast(msg, type) {
+    const container = document.getElementById('toasts');
+    const toast = document.createElement('div');
+    const colors = {
+        achievement: 'border-l-4 border-emerald-400 bg-emerald-900/80',
+        crystal: 'border-l-4 border-teal-400 bg-teal-900/80',
+        prestige: 'border-l-4 border-amber-400 bg-amber-900/80',
+        info: 'border-l-4 border-blue-400 bg-blue-900/80',
+    };
+    toast.className = `toast-in ${colors[type] || colors.info} rounded-lg px-4 py-3 text-sm font-semibold pointer-events-auto`;
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => {
+        toast.classList.remove('toast-in');
+        toast.classList.add('toast-out');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+function showModal(title, text, callback) {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-text').textContent = text;
+    document.getElementById('modal-overlay').style.display = 'flex';
+    modalCallback = callback;
+}
+
+/* =====================================================
+   UI - RENDERIZADO DE PESTAÑAS
+   ===================================================== */
+function switchTab(tab) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        const isActive = btn.dataset.tab === tab;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-selected', isActive);
+    });
+    renderTabContent();
+}
+
+function renderTabContent() {
+    const container = document.getElementById('tab-content');
+    switch (currentTab) {
+        case 'upgrades': container.innerHTML = renderUpgrades(); break;
+        case 'crystals': container.innerHTML = renderCrystalShop(); break;
+        case 'prestige': container.innerHTML = renderPrestige(); break;
+        case 'achievements': container.innerHTML = renderAchievements(); break;
+    }
+    attachTabListeners();
+}
+
+function renderUpgrades() {
+    const categories = [...new Set(UPGRADES.map(u => u.category))];
+    let html = '';
+    for (const cat of categories) {
+        html += `<div class="section-title">${cat}</div>`;
+        for (const up of UPGRADES.filter(u => u.category === cat)) {
+            const lvl = game.upgrades[up.id] || 0;
+            const maxed = lvl >= up.maxLevel;
+            const cost = getUpgradeCost(up, lvl);
+            const canAfford = game.ore >= cost && !maxed;
+            let effectText = '';
+            if (up.type === 'click') effectText = `+${lvl * up.effectPerLevel} por clic`;
+            else if (up.type === 'auto') effectText = `+${(lvl * up.effectPerLevel).toFixed(1)}/s`;
+            else if (up.type === 'global_mult') effectText = `+${Math.round(lvl * up.effectPerLevel * 100)}% global`;
+            else if (up.type === 'click_mult') effectText = `+${Math.round(lvl * up.effectPerLevel * 100)}% clic`;
+
+            html += `
+            <div class="upgrade-card ${maxed ? 'maxed' : ''}" data-upgrade-id="${up.id}">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg flex items-center justify-center text-sm" style="background:var(--accent-dim); color:var(--accent);">
+                        <i class="fas ${up.icon}"></i>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-sm font-bold truncate">${up.name}</div>
+                        <div class="text-xs opacity-50 truncate">${up.desc}</div>
+                    </div>
+                    <div class="text-xs font-bold font-display upgrade-level" style="color:var(--accent);">${lvl}/${up.maxLevel}</div>
+                </div>
+                <div class="progress-track mt-2"><div class="progress-fill" style="width:${(lvl/up.maxLevel)*100}%"></div></div>
+                <div class="flex justify-between items-center mt-2">
+                    <span class="text-xs opacity-60 effect-text">${effectText}</span>
+                    <button class="buy-btn ${canAfford ? 'can-afford' : ''}" data-upgrade-id="${up.id}" ${(!canAfford) ? 'disabled' : ''}>
+                        ${maxed ? 'MAX' : '<i class="fas fa-gem mr-1"></i>' + formatNumber(cost)}
+                    </button>
+                </div>
+            </div>`;
+        }
+    }
+    return html;
+}
+
+function renderCrystalShop() {
+    let html = `<div class="text-center mb-4"><span class="text-xs opacity-50">Tus cristales: </span><span class="font-display font-bold text-emerald-400"><i class="fas fa-diamond mr-1"></i>${game.crystals}</span></div>`;
+    html += `<div class="section-title">Poderes Temporales</div>`;
+    for (const item of CRYSTAL_SHOP.filter(c => c.temp)) {
+        const bought = game.crystalUpgrades[item.id] || 0;
+        const canAfford = game.crystals >= item.cost;
+        const active = game.buffs[item.id] > 0;
+        html += `
+        <div class="upgrade-card" data-crystal-id="${item.id}">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg flex items-center justify-center text-sm" style="background:var(--accent2-dim); color:var(--accent2);">
+                    <i class="fas ${item.icon}"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-bold truncate">${item.name}</div>
+                    <div class="text-xs opacity-50 truncate">${item.desc}</div>
+                </div>
+                ${active ? `<span class="text-xs font-bold text-emerald-400">${game.buffs[item.id]}s</span>` : ''}
+            </div>
+            <div class="flex justify-end mt-2">
+                <button class="crystal-btn ${canAfford ? 'can-afford' : ''}" data-crystal-id="${item.id}" ${(!canAfford) ? 'disabled' : ''}>
+                    <i class="fas fa-diamond mr-1"></i>${item.cost}
+                </button>
+            </div>
+        </div>`;
+    }
+    html += `<div class="section-title">Mejoras Permanentes</div>`;
+    for (const item of CRYSTAL_SHOP.filter(c => !c.temp)) {
+        const bought = game.crystalUpgrades[item.id] || 0;
+        const maxed = bought >= item.maxBuy;
+        const canAfford = game.crystals >= item.cost && !maxed;
+        html += `
+        <div class="upgrade-card ${maxed ? 'maxed' : ''}" data-crystal-id="${item.id}">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-lg flex items-center justify-center text-sm" style="background:var(--accent2-dim); color:var(--accent2);">
+                    <i class="fas ${item.icon}"></i>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-bold truncate">${item.name}</div>
+                    <div class="text-xs opacity-50 truncate">${item.desc}</div>
+                </div>
+                <span class="text-xs font-bold text-emerald-400">${bought}/${item.maxBuy}</span>
+            </div>
+            <div class="flex justify-end mt-2">
+                <button class="crystal-btn ${canAfford ? 'can-afford' : ''}" data-crystal-id="${item.id}" ${(!canAfford) ? 'disabled' : ''}>
+                    ${maxed ? 'MAX' : '<i class="fas fa-diamond mr-1"></i>' + item.cost}
+                </button>
+            </div>
+        </div>`;
+    }
+    return html;
+}
+
+function renderPrestige() {
+    const unlocked = game.totalOre >= 1000000 || game.totalPrestiges > 0;
+    const potentialGain = Math.max(0, Math.floor(Math.sqrt(game.totalOre / 10000)));
+    const canPrestige = potentialGain >= 1;
+    const currentMult = (1 + game.starPoints * 0.1);
+
+    let html = `
+    <div class="text-center py-6">
+        <div class="w-16 h-16 mx-auto rounded-full flex items-center justify-center mb-4" style="background:var(--accent-dim); border: 2px solid var(--accent);">
+            <i class="fas fa-star text-2xl text-amber-400"></i>
+        </div>
+        <h2 class="font-display text-xl font-bold mb-2" style="color:var(--accent);">Prestigio</h2>
+        <p class="text-sm opacity-60 max-w-sm mx-auto mb-6">Reinicia tu progreso a cambio de Puntos Estelares que multiplican permanentemente todos tus ingresos.</p>
+        <div class="grid grid-cols-2 gap-3 max-w-xs mx-auto mb-6">
+            <div class="rounded-xl p-4" style="background:var(--accent-dim); border:1px solid var(--border);">
+                <div class="text-xs opacity-50 mb-1">Puntos Estelares</div>
+                <div class="font-display text-xl font-bold text-amber-400">${game.starPoints}</div>
+            </div>
+            <div class="rounded-xl p-4" style="background:var(--accent-dim); border:1px solid var(--border);">
+                <div class="text-xs opacity-50 mb-1">Multiplicador</div>
+                <div class="font-display text-xl font-bold text-amber-400">x${currentMult.toFixed(1)}</div>
+            </div>
+        </div>`;
+
+    if (unlocked) {
+        html += `
+        <div class="rounded-xl p-4 mb-4 text-sm" style="background:rgba(245,158,11,0.05); border:1px solid var(--border);">
+            Si prestigias ahora obtendrás: <span class="font-bold text-amber-400">+${potentialGain} Puntos Estelares</span><br>
+            <span class="opacity-50">Minerales totales: ${formatNumber(game.totalOre)}</span>
+        </div>
+        <button class="prestige-btn" id="prestige-btn" ${(!canPrestige) ? 'disabled' : ''}>
+            <i class="fas fa-star mr-2"></i>Prestigiar
+        </button>`;
+    } else {
+        const progress = Math.min(1, game.totalOre / 1000000);
+        html += `
+        <div class="rounded-xl p-4 mb-4" style="background:rgba(245,158,11,0.05); border:1px solid var(--border);">
+            <div class="text-sm mb-2">Progreso hasta desbloquear: <span class="font-bold text-amber-400">${formatNumber(game.totalOre)} / 1,000,000</span></div>
+            <div class="progress-track"><div class="progress-fill" style="width:${progress*100}%"></div></div>
+        </div>
+        <p class="text-xs opacity-40">Necesitas acumular 1,000,000 de minerales totales</p>`;
+    }
+
+    if (game.totalPrestiges > 0) {
+        html += `<p class="text-xs opacity-30 mt-4">Prestigios realizados: ${game.totalPrestiges}</p>`;
+    }
+
+    html += `</div>`;
+    return html;
+}
+
+function renderAchievements() {
+    let html = '';
+    for (const ach of ACHIEVEMENTS) {
+        const unlocked = game.achievements.includes(ach.id);
+        html += `
+        <div class="achievement-item ${unlocked ? 'unlocked' : 'locked'}">
+            <div class="ach-icon text-lg w-8 text-center"><i class="fas ${ach.icon}"></i></div>
+            <div class="flex-1 min-w-0">
+                <div class="ach-name text-sm font-bold truncate">${unlocked ? ach.name : '???'}</div>
+                <div class="text-xs opacity-50 truncate">${ach.desc}</div>
+            </div>
+            ${unlocked ? '<i class="fas fa-check text-emerald-400 text-xs"></i>' : ''}
+        </div>`;
+    }
+    return html;
+}
+
+function attachTabListeners() {
+    document.querySelectorAll('.buy-btn[data-upgrade-id]').forEach(btn => {
+        btn.addEventListener('click', e => { e.stopPropagation(); buyUpgrade(btn.dataset.upgradeId); });
+    });
+    document.querySelectorAll('.crystal-btn[data-crystal-id]').forEach(btn => {
+        btn.addEventListener('click', e => { e.stopPropagation(); buyCrystalUpgrade(btn.dataset.crystalId); });
+    });
+    const prestigeBtn = document.getElementById('prestige-btn');
+    if (prestigeBtn) {
+        prestigeBtn.addEventListener('click', () => {
+            const gain = Math.floor(Math.sqrt(game.totalOre / 10000));
+            showModal('Confirmar Prestigio', `Reiniciarás todo tu progreso y obtendrás ${gain} Puntos Estelares. ¿Estás seguro?`, doPrestige);
+        });
+    }
+}
+
+/* =====================================================
+   UI - ACTUALIZACIÓN RÁPIDA
+   ===================================================== */
+function updateUI() {
+    document.getElementById('ore-display').textContent = formatNumber(game.ore);
+    document.getElementById('crystal-display').textContent = game.crystals;
+    document.getElementById('per-sec-display').textContent = formatNumber(game.autoIncome) + '/s';
+    document.getElementById('click-power-display').textContent = formatNumber(game.clickPower);
+    document.getElementById('auto-income-display').textContent = formatNumber(game.autoIncome) + '/s';
+    document.getElementById('crystal-chance-display').textContent = Math.round(game.crystalChance * 100) + '%';
+
+    // Actualizar tarjetas si es necesario
+    if (currentTab === 'upgrades') {
+        UPGRADES.forEach(up => {
+            const card = document.querySelector(`[data-upgrade-id="${up.id}"]`);
+            if (!card) return;
+            const lvl = game.upgrades[up.id] || 0;
+            const maxed = lvl >= up.maxLevel;
+            const cost = getUpgradeCost(up, lvl);
+            const canAfford = game.ore >= cost && !maxed;
+            const btn = card.querySelector('.buy-btn');
+            if (!btn) return;
+            btn.classList.toggle('can-afford', canAfford);
+            btn.disabled = !canAfford;
+            if (!maxed) btn.innerHTML = '<i class="fas fa-gem mr-1"></i>' + formatNumber(cost);
+        });
+    }
+    if (currentTab === 'crystals') {
+        CRYSTAL_SHOP.forEach(item => {
+            const card = document.querySelector(`[data-crystal-id="${item.id}"]`);
+            if (!card) return;
+            const btn = card.querySelector('.crystal-btn');
+            if (!btn) return;
+            const canAfford = game.crystals >= item.cost;
+            btn.classList.toggle('can-afford', canAfford);
+            btn.disabled = !canAfford;
+        });
+    }
+}
+
+/* =====================================================
+   CANVAS - EFECTOS VISUALES
+   ===================================================== */
+const miningCanvas = document.getElementById('mining-canvas');
+const miningArea = document.getElementById('mining-area');
+const ctx = miningCanvas.getContext('2d');
+let canvasW = 0, canvasH = 0;
+
+// Estrellas de fondo
+const stars = Array.from({length: 180}, () => ({
+    x: Math.random(), y: Math.random(),
+    size: Math.random() * 1.8 + 0.3,
+    twinkle: Math.random() * Math.PI * 2,
+    speed: Math.random() * 0.015 + 0.005,
+}));
+
+// Asteroides flotantes pequeños
+const floatingRocks = Array.from({length: 10}, () => {
+    const verts = [];
+    const n = 5 + Math.floor(Math.random() * 4);
+    for (let i = 0; i < n; i++) {
+        verts.push(1 + (Math.random() - 0.5) * 0.5);
+    }
+    return {
+        x: Math.random(), y: Math.random(),
+        size: Math.random() * 10 + 4,
+        vx: (Math.random() - 0.5) * 0.00015,
+        vy: Math.random() * 0.0001 + 0.00005,
+        rot: Math.random() * Math.PI * 2,
+        rotV: (Math.random() - 0.5) * 0.008,
+        verts, n,
+        shade: Math.random() * 0.3 + 0.15,
+    };
+});
+
+// Asteroide central
+const centralVerts = [];
+const centralCraters = [];
+(function initCentralAsteroid() {
+    const n = 28;
+    for (let i = 0; i < n; i++) {
+        centralVerts.push(1 + (Math.random() - 0.5) * 0.18);
+    }
+    for (let i = 0; i < 7; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const dist = Math.random() * 0.55;
+        centralCraters.push({
+            x: Math.cos(angle) * dist,
+            y: Math.sin(angle) * dist,
+            r: Math.random() * 0.12 + 0.04,
+        });
+    }
+})();
+
+// Partículas de clic
+const particles = [];
+function spawnParticles(x, y, color, count) {
+    for (let i = 0; i < count; i++) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = Math.random() * 4 + 1.5;
+        particles.push({
+            x, y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 1,
+            life: 1,
+            decay: Math.random() * 0.025 + 0.015,
+            size: Math.random() * 4 + 1.5,
+            color,
+        });
+    }
+}
+
+// Números flotantes
+const floatingNums = [];
+function spawnFloatingNumber(x, y, text, color) {
+    floatingNums.push({ x, y, text, color, life: 1, vy: -1.5 });
+}
+
+function resizeCanvas() {
+    const rect = miningArea.getBoundingClientRect();
+    canvasW = rect.width;
+    canvasH = rect.height;
+    miningCanvas.width = canvasW;
+    miningCanvas.height = canvasH;
+}
+
+function drawFrame(time) {
+    const t = time * 0.001;
+    ctx.clearRect(0, 0, canvasW, canvasH);
+
+    // Fondo degradado
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, canvasH);
+    bgGrad.addColorStop(0, '#060a12');
+    bgGrad.addColorStop(0.5, '#0a1020');
+    bgGrad.addColorStop(1, '#080e18');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, canvasW, canvasH);
+
+    // Estrellas
+    for (const s of stars) {
+        const alpha = 0.3 + 0.7 * (0.5 + 0.5 * Math.sin(s.twinkle + t * s.speed * 60));
+        ctx.fillStyle = `rgba(232,224,212,${alpha})`;
+        ctx.beginPath();
+        ctx.arc(s.x * canvasW, s.y * canvasH, s.size, 0, Math.PI * 2);
+        ctx.fill();
+    }
+
+    // Asteroides flotantes
+    for (const r of floatingRocks) {
+        r.x += r.vx; r.y += r.vy; r.rot += r.rotV;
+        if (r.x < -0.05) r.x = 1.05; if (r.x > 1.05) r.x = -0.05;
+        if (r.y > 1.05) { r.y = -0.05; r.x = Math.random(); }
+        ctx.save();
+        ctx.translate(r.x * canvasW, r.y * canvasH);
+        ctx.rotate(r.rot);
+        ctx.beginPath();
+        for (let i = 0; i < r.n; i++) {
+            const a = (i / r.n) * Math.PI * 2;
+            const rad = r.size * r.verts[i];
+            const px = Math.cos(a) * rad, py = Math.sin(a) * rad;
+            i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.fillStyle = `rgba(120,105,80,${r.shade})`;
+        ctx.fill();
+        ctx.restore();
+    }
+
+    // Asteroide central
+    const cx = canvasW * 0.5, cy = canvasH * 0.48;
+    const baseRadius = Math.min(canvasW, canvasH) * 0.22;
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(t * 0.06);
+
+    // Resplandor exterior
+    const glowIntensity = 15 + Math.sin(t * 2) * 5 + Math.min(game.clickPower / 50, 30);
+    ctx.shadowColor = '#f59e0b';
+    ctx.shadowBlur = glowIntensity;
+
+    // Forma del asteroide
+    ctx.beginPath();
+    for (let i = 0; i <= centralVerts.length; i++) {
+        const idx = i % centralVerts.length;
+        const a = (idx / centralVerts.length) * Math.PI * 2;
+        const rad = baseRadius * centralVerts[idx];
+        const px = Math.cos(a) * rad, py = Math.sin(a) * rad;
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+    }
+    ctx.closePath();
+
+    const astGrad = ctx.createRadialGradient(-baseRadius * 0.3, -baseRadius * 0.3, 0, 0, 0, baseRadius * 1.1);
+    astGrad.addColorStop(0, '#a0906e');
+    astGrad.addColorStop(0.35, '#7b6b50');
+    astGrad.addColorStop(0.7, '#4e3e28');
+    astGrad.addColorStop(1, '#2a1f10');
+    ctx.fillStyle = astGrad;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Cráteres
+    for (const c of centralCraters) {
+        const crX = c.x * baseRadius, crY = c.y * baseRadius, crR = c.r * baseRadius;
+        ctx.beginPath();
+        ctx.arc(crX, crY, Math.max(1, crR), 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,0,0,0.25)';
+        ctx.fill();
+        ctx.beginPath();
+        ctx.arc(crX - crR * 0.25, crY - crR * 0.25, Math.max(0.5, crR * 0.6), 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(255,255,255,0.04)';
+        ctx.fill();
+    }
+    ctx.restore();
+
+    // Indicador de clic
+    const pulseAlpha = 0.15 + 0.1 * Math.sin(t * 3);
+    ctx.beginPath();
+    ctx.arc(cx, cy, baseRadius + 12, 0, Math.PI * 2);
+    ctx.strokeStyle = `rgba(245,158,11,${pulseAlpha})`;
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 8]);
+    ctx.lineDashOffset = -t * 30;
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    // Texto "CLIC" sutil
+    ctx.fillStyle = `rgba(245,158,11,${0.15 + 0.05 * Math.sin(t * 2)})`;
+    ctx.font = '600 11px "Space Grotesk", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('HAZ CLIC PARA MINAR', cx, cy + baseRadius + 30);
+
+    // Partículas
+    for (let i = particles.length - 1; i >= 0; i--) {
+        const p = particles[i];
+        p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.life -= p.decay;
+        if (p.life <= 0) { particles.splice(i, 1); continue; }
+        ctx.globalAlpha = p.life;
+        ctx.fillStyle = p.color;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size * p.life, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // Números flotantes
+    for (let i = floatingNums.length - 1; i >= 0; i--) {
+        const n = floatingNums[i];
+        n.y += n.vy; n.life -= 0.018;
+        if (n.life <= 0) { floatingNums.splice(i, 1); continue; }
+        ctx.globalAlpha = n.life;
+        ctx.fillStyle = n.color;
+        ctx.font = `bold ${14 + (1 - n.life) * 6}px "Orbitron", sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(n.text, n.x, n.y);
+    }
+    ctx.globalAlpha = 1;
+
+    // Buffs activos - indicadores
+    let buffY = 16;
+    if (game.buffs.doubleClick > 0) {
+        ctx.fillStyle = 'rgba(6,214,160,0.8)';
+        ctx.font = 'bold 11px "Space Grotesk", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`x2 FUERZA ${game.buffs.doubleClick}s`, 12, buffY);
+        buffY += 18;
+    }
+    if (game.buffs.miningFever > 0) {
+        ctx.fillStyle = 'rgba(239,68,68,0.8)';
+        ctx.font = 'bold 11px "Space Grotesk", sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`x5 AUTO ${game.buffs.miningFever}s`, 12, buffY);
+    }
+
+    requestAnimationFrame(drawFrame);
+}
+
+function shakeMiningArea() {
+    miningArea.classList.remove('shake');
+    void miningArea.offsetWidth;
+    miningArea.classList.add('shake');
+}
+
+/* =====================================================
+   GUARDADO Y CARGA
+   ===================================================== */
+function saveGame() {
+    const data = {
+        ore: game.ore, crystals: game.crystals,
+        totalOre: game.totalOre, totalCrystals: game.totalCrystals,
+        totalClicks: game.totalClicks, totalPrestiges: game.totalPrestiges,
+        starPoints: game.starPoints, upgrades: game.upgrades,
+        crystalUpgrades: game.crystalUpgrades,
+        achievements: game.achievements,
+        savedAt: Date.now(),
+    };
+    try {
+        localStorage.setItem('asteroid_tycoon_save', JSON.stringify(data));
+        showToast('Juego guardado', 'info');
+    } catch (e) { /* silencio */ }
+}
+
+function loadGame() {
+    try {
+        const raw = localStorage.getItem('asteroid_tycoon_save');
+        if (!raw) return;
+        const data = JSON.parse(raw);
+        game.ore = data.ore || 0;
+        game.crystals = data.crystals || 0;
+        game.totalOre = data.totalOre || 0;
+        game.totalCrystals = data.totalCrystals || 0;
+        game.totalClicks = data.totalClicks || 0;
+        game.totalPrestiges = data.totalPrestiges || 0;
+        game.starPoints = data.starPoints || 0;
+        game.upgrades = data.upgrades || {};
+        game.crystalUpgrades = data.crystalUpgrades || { doubleClick: 0, miningFever: 0, luck: 0, magnet: 0 };
+        game.achievements = data.achievements || [];
+
+        // Calcular ingreso offline (máx 2 horas)
+        if (data.savedAt) {
+            const offlineSec = Math.min((Date.now() - data.savedAt) / 1000, 7200);
+            if (offlineSec > 5) {
+                recalculate();
+                const offlineGain = game.autoIncome * offlineSec;
+                if (offlineGain > 0) {
+                    game.ore += offlineGain;
+                    game.totalOre += offlineGain;
+                    setTimeout(() => showToast(`Ganaste ${formatNumber(offlineGain)} minerales mientras estabas ausente`, 'info'), 500);
+                }
+            }
+        }
+
+        recalculate();
+    } catch (e) { /* silencio */ }
+}
+
+function resetGame() {
+    showModal('Reiniciar Juego', 'Se eliminará todo tu progreso permanentemente. ¿Estás seguro?', () => {
+        localStorage.removeItem('asteroid_tycoon_save');
+        location.reload();
+    });
+}
+
+/* =====================================================
+   BUCLE PRINCIPAL
+   ===================================================== */
+function gameTick() {
+    // Ingreso automático (tick cada 100ms = 0.1s)
+    if (game.autoIncome > 0) {
+        const gain = game.autoIncome * 0.1;
+        game.ore += gain;
+        game.totalOre += gain;
+    }
+
+    // Buffs temporales
+    if (game.buffs.doubleClick > 0) {
+        game.buffs.doubleClick = Math.max(0, game.buffs.doubleClick - 0.1);
+        if (game.buffs.doubleClick <= 0) { game.buffs.doubleClick = 0; recalculate(); }
+    }
+    if (game.buffs.miningFever > 0) {
+        game.buffs.miningFever = Math.max(0, game.buffs.miningFever - 0.1);
+        if (game.buffs.miningFever <= 0) { game.buffs.miningFever = 0; recalculate(); }
+    }
+
+    // Auto-guardado cada 30s
+    if (Date.now() - game.lastSave >= 30000) {
+        game.lastSave = Date.now();
+        try {
+            const data = {
+                ore: game.ore, crystals: game.crystals,
+                totalOre: game.totalOre, totalCrystals: game.totalCrystals,
+                totalClicks: game.totalClicks, totalPrestiges: game.totalPrestiges,
+                starPoints: game.starPoints, upgrades: game.upgrades,
+                crystalUpgrades: game.crystalUpgrades,
+                achievements: game.achievements, savedAt: Date.now(),
+            };
+            localStorage.setItem('asteroid_tycoon_save', JSON.stringify(data));
+        } catch (e) { /* silencio */ }
+    }
+
+    checkAchievements();
+    updateUI();
+}
+
+/* =====================================================
+   INICIALIZACIÓN
+   ===================================================== */
+function init() {
+    loadGame();
+    recalculate();
+
+    // Canvas
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+    requestAnimationFrame(drawFrame);
+
+    // Clic en zona de minería
+    miningCanvas.addEventListener('click', e => {
+        const rect = miningCanvas.getBoundingClientRect();
+        handleMiningClick(e.clientX - rect.left, e.clientY - rect.top);
+    });
+    miningCanvas.addEventListener('touchstart', e => {
+        e.preventDefault();
+        const touch = e.touches[0];
+        const rect = miningCanvas.getBoundingClientRect();
+        handleMiningClick(touch.clientX - rect.left, touch.clientY - rect.top);
+    }, { passive: false });
+    miningArea.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            handleMiningClick(canvasW / 2, canvasH / 2);
+        }
+    });
+
+    // Pestañas
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+    });
+
+    // Botones footer
+    document.getElementById('save-btn').addEventListener('click', saveGame);
+    document.getElementById('reset-btn').addEventListener('click', resetGame);
+
+    // Modal
+    document.getElementById('modal-cancel').addEventListener('click', () => {
+        document.getElementById('modal-overlay').style.display = 'none';
+        modalCallback = null;
+    });
+    document.getElementById('modal-confirm').addEventListener('click', () => {
+        document.getElementById('modal-overlay').style.display = 'none';
+        if (modalCallback) modalCallback();
+        modalCallback = null;
+    });
+    document.getElementById('modal-overlay').addEventListener('click', e => {
+        if (e.target === e.currentTarget) {
+            e.currentTarget.style.display = 'none';
+            modalCallback = null;
+        }
+    });
+
+    // Contador de logros
+    document.getElementById('achievement-count').textContent = game.achievements.length;
+
+    // Renderizado inicial
+    renderTabContent();
+    updateUI();
+
+    // Bucle de juego
+    setInterval(gameTick, 100);
+}
+
+init();
+</script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'9f0dcdb87e0f0caa',t:'MTc3Njk1NzExNg=='};var a=document.createElement('script');a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
